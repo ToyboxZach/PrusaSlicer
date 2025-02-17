@@ -35,8 +35,8 @@ else ()
         URL_HASH SHA256=b9df93635b20e4089c29623b19420c4ac848a1b29df1cfd59f26cab0d2666aa0
         DOWNLOAD_DIR ${${PROJECT_NAME}_DEP_DOWNLOAD_DIR}/MPFR
         BUILD_IN_SOURCE ON
-        CONFIGURE_COMMAND env "CFLAGS=${_gmp_ccflags}" "CXXFLAGS=${_gmp_ccflags}" ./configure ${_cross_compile_arg} --prefix=${${PROJECT_NAME}_DEP_INSTALL_PREFIX} --enable-shared=no --enable-static=yes --with-gmp=${${PROJECT_NAME}_DEP_INSTALL_PREFIX} ${_gmp_build_tgt}
-        BUILD_COMMAND make -j
+        CONFIGURE_COMMAND  env "CFLAGS=${_gmp_ccflags}" "CXXFLAGS=${_gmp_ccflags}" CC_FOR_BUILD=gcc emconfigure ./configure ${_cross_compile_arg} --prefix=${${PROJECT_NAME}_DEP_INSTALL_PREFIX} --host none  --enable-assert=none --disable-thread-safe --disable-float128 --disable-decimal-float --enable-gmp-internals --enable-shared=no --enable-static=yes --with-gmp=${${PROJECT_NAME}_DEP_INSTALL_PREFIX} ${_gmp_build_tgt}
+        BUILD_COMMAND touch aclocal.m4 configure Makefile.am Makefile.in ./doc/Makefile.am ./doc/Makefile.in ./doc/mpfr.info && emmake make -j4
         INSTALL_COMMAND make install
     )
 endif ()

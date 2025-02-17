@@ -432,7 +432,7 @@ foreach(_source IN ITEMS ${SLIC3R_GUI_SOURCES})
     source_group("${_group_path}" FILES "${_source}")
 endforeach()
 
-encoding_check(libslic3r_gui)
+#encoding_check(libslic3r_gui)
 
 target_link_libraries(
     libslic3r_gui

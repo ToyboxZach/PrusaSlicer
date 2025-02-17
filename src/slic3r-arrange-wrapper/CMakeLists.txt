@@ -31,5 +31,7 @@ add_library(slic3r-arrange-wrapper
 )
 
 target_include_directories(slic3r-arrange-wrapper PRIVATE src)
+target_include_directories(slic3r-arrange-wrapper PUBLIC "../")
+target_include_directories(slic3r-arrange-wrapper PUBLIC "../libslice3r")
 target_include_directories(slic3r-arrange-wrapper PUBLIC include)
 target_link_libraries(slic3r-arrange-wrapper PUBLIC slic3r-arrange)

@@ -34,7 +34,7 @@ else()
 endif()
 
 option(SLIC3R_STATIC 			"Compile PrusaSlicer with static libraries (Boost, TBB, glew)" ${SLIC3R_STATIC_INITIAL})
-option(SLIC3R_GUI    			"Compile PrusaSlicer with GUI components (OpenGL, wxWidgets)" 1)
+option(SLIC3R_GUI    			"Compile PrusaSlicer with GUI components (OpenGL, wxWidgets)" 0)
 option(SLIC3R_FHS               "Assume PrusaSlicer is to be installed in a FHS directory structure" 0)
 option(SLIC3R_PCH               "Use precompiled headers" 1)
 option(SLIC3R_MSVC_COMPILE_PARALLEL "Compile on Visual Studio in parallel" 1)
@@ -83,7 +83,7 @@ if (APPLE)
 endif ()
 
 option(SLIC3R_BUILD_SANDBOXES   "Build development sandboxes" OFF)
-option(SLIC3R_BUILD_TESTS       "Build unit tests" ON)
+option(SLIC3R_BUILD_TESTS       "Build unit tests" OFF)
 
 if (IS_CROSS_COMPILE)
     message("Detected cross compilation setup. Tests and encoding checks will be forcedly disabled!")
@@ -128,7 +128,8 @@ if (MSVC AND CMAKE_CXX_COMPILER_ID STREQUAL Clang)
 else ()
     set(IS_CLANG_CL FALSE)
 endif ()
-
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DBOOST_LOG_NO_THREADS  -pthread -Wno-missing-template-arg-list-after-template-kw -ferror-limit=0 -fwasm-exceptions ")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DBOOST_LOG_NO_THREADS  -pthread -Wno-missing-template-arg-list-after-template-kw -ferror-limit=0 -fwasm-exceptions ")
 if (MSVC)
     if (SLIC3R_MSVC_COMPILE_PARALLEL AND NOT IS_CLANG_CL)
            add_compile_options(/MP)
@@ -307,6 +308,10 @@ if (SLIC3R_ASAN)
     endif ()
 endif ()
 
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -pthread  ")
+set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -pthread ")
+set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} -pthread ")
+
 if (SLIC3R_UBSAN)
     # Stacktrace for every report is enabled by default. It can be disabled by running PrusaSlicer with "UBSAN_OPTIONS=print_stacktrace=0".
 
@@ -341,17 +346,11 @@ endif ()
 set(LIBDIR_BIN ${CMAKE_CURRENT_BINARY_DIR}/src)
 # For generated header files
 include_directories(${LIBDIR_BIN}/platform)
+include_directories(${PROJECT_SOURCE_DIR}/slic3r-arrange-wrapper/include)
+include_directories(${PROJECT_SOURCE_DIR}/slic3r-arrange/include)
 
-if(WIN32)
-    add_definitions(-D_USE_MATH_DEFINES -D_WIN32 -D_CRT_SECURE_NO_WARNINGS -D_SCL_SECURE_NO_WARNINGS)
-    if(MSVC)
-        # BOOST_ALL_NO_LIB: Avoid the automatic linking of Boost libraries on Windows. Rather rely on explicit linking.
-        add_definitions(-DBOOST_ALL_NO_LIB -DBOOST_USE_WINAPI_VERSION=0x601 -DBOOST_SYSTEM_USE_UTF8 )
-        # Force the source code encoding to UTF-8. See PrusaSlicer GH pull request #5583
-        add_compile_options("$<$<C_COMPILER_ID:MSVC>:/utf-8>")
-        add_compile_options("$<$<CXX_COMPILER_ID:MSVC>:/utf-8>")
-    endif(MSVC)
-endif(WIN32)
+include_directories(${PROJECT_SOURCE_DIR}/src/slic3r-arrange-wrapper/include)
+include_directories(${PROJECT_SOURCE_DIR}/src/slic3r-arrange/include)
 
 add_definitions(-DwxUSE_UNICODE -D_UNICODE -DUNICODE -DWXINTL_NO_GETTEXT_MACRO)
 
@@ -360,6 +359,7 @@ add_definitions(-DwxNO_UNSAFE_WXSTRING_CONV)
 
 # Find and configure boost
 if(SLIC3R_STATIC)
+
     # Use static boost libraries.
     set(Boost_USE_STATIC_LIBS ON)
     # Use boost libraries linked statically to the C++ runtime.
@@ -369,23 +369,33 @@ endif()
 # set(Boost_COMPILER "-mgw81")
 # boost::process was introduced first in version 1.64.0,
 # boost::beast::detail::base64 was introduced first in version 1.66.0
-set(MINIMUM_BOOST_VERSION "1.83.0")
-set(_boost_components "system;filesystem;thread;log;locale;regex;chrono;atomic;date_time;iostreams;nowide")
-find_package(Boost ${MINIMUM_BOOST_VERSION} REQUIRED COMPONENTS ${_boost_components})
+set(MINIMUM_BOOST_VERSION "1.87.0")
+find_package(Threads REQUIRED)
+
+
+set(_boost_components "system;filesystem;thread;locale;regex;chrono;atomic;date_time;iostreams;nowide;log")
+set(Eigen3_DIR "~/PrusaPlayground/PrusaSlicer/deps/build/destdir/usr/local/share/eigen3/cmake")
 
 find_package(Eigen3 3.3.7 REQUIRED)
-
+set(Boost_USE_STATIC_LIBS ON)
 add_library(boost_libs INTERFACE)
 add_library(boost_headeronly INTERFACE)
-
+set(Boost_ARCHITECTURE 64)
+find_package(Boost REQUIRED COMPONENTS filesystem thread log ${_boost_components})
+set(WASM_ATOMICS 1)
+set(WASM_BULK_MEMORY 1)
 if (APPLE)
     # BOOST_ASIO_DISABLE_KQUEUE : prevents a Boost ASIO bug on OS X: https://svn.boost.org/trac/boost/ticket/5339
     target_compile_definitions(boost_headeronly INTERFACE BOOST_ASIO_DISABLE_KQUEUE)
 endif()
 
-if(NOT SLIC3R_STATIC)
-    target_compile_definitions(boost_headeronly INTERFACE BOOST_LOG_DYN_LINK)
-endif()
+    #target_compile_definitions(boost_headeronly INTERFACE BOOST_LOG_DYN_LINK)
+message("Boost_INCLUDE_DIR=${Boost_INCLUDE_DIR}")
+
+set(BOOST_LOG_NO_THREADS true)
+SET(Boost_USE_STATIC_LIBS ON)
+find_package(boost_log REQUIRED)
+target_link_libraries(boost_libs INTERFACE Boost::log)
 
 function(slic3r_remap_configs targets from_Cfg to_Cfg)
     if(MSVC)
@@ -420,6 +430,8 @@ else()
     target_link_libraries(boost_libs INTERFACE boost_headeronly ${Boost_LIBRARIES})
 endif()
 
+include_directories(${Boost_INCLUDE_DIRS})
+
 
 
 # Find and configure intel-tbb
@@ -427,6 +439,7 @@ if(SLIC3R_STATIC)
     set(TBB_STATIC 1)
 endif()
 set(TBB_DEBUG 1)
+message("CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}")
 find_package(TBB REQUIRED)
 slic3r_remap_configs(TBB::tbb RelWithDebInfo Release)
 slic3r_remap_configs(TBB::tbbmalloc RelWithDebInfo Release)
@@ -439,7 +452,7 @@ slic3r_remap_configs(TBB::tbbmalloc RelWithDebInfo Release)
 # The Intel TBB library will use the std::exception_ptr feature of C++11.
 # add_definitions(-DTBB_USE_CAPTURED_EXCEPTION=0)
 
-find_package(CURL REQUIRED)
+#find_package(CURL REQUIRED)
 
 add_library(libcurl INTERFACE)
 target_link_libraries(libcurl INTERFACE CURL::libcurl)
@@ -491,16 +504,7 @@ else()
     target_link_libraries(libcereal INTERFACE cereal::cereal)
 endif()
 
-# l10n
-set(L10N_DIR "${SLIC3R_RESOURCES_DIR}/localization")
-add_custom_target(gettext_make_pot
-    COMMAND xgettext --keyword=L --keyword=_L --keyword=_u8L --keyword=L_CONTEXT:1,2c --keyword=_L_PLURAL:1,2 --add-comments=TRN --from-code=UTF-8 --debug --boost
-        -f "${L10N_DIR}/list.txt"
-        -o "${L10N_DIR}/PrusaSlicer.pot"
-    COMMAND hintsToPot ${SLIC3R_RESOURCES_DIR} ${L10N_DIR}
-    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
-    COMMENT "Generate pot file from strings in the source tree"
-)
+
 
 add_custom_target(gettext_merge_community_po_with_pot
     WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
@@ -609,13 +613,16 @@ function(prusaslicer_copy_dlls target)
         VERBATIM)
 endfunction()
 
+
+message("ADDING SUB DIR Boost_INCLUDE_DIRS=${Boost_INCLUDE_DIRS}")
+include_directories(${Boost_INCLUDE_DIRS})
+include_directories("${CMAKE_PREFIX_PATH}/include")
 add_subdirectory(build-utils)
 add_subdirectory(bundled_deps)
 # libslic3r, PrusaSlicer GUI and the PrusaSlicer executable.
 add_subdirectory(src)
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT PrusaSlicer_app_console)
 
-add_dependencies(gettext_make_pot hintsToPot)
 
 if(SLIC3R_BUILD_SANDBOXES)
     add_subdirectory(sandboxes)

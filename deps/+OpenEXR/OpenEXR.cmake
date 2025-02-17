@@ -10,6 +10,13 @@ add_cmake_project(OpenEXR
         -DPYILMBASE_ENABLE:BOOL=OFF 
         -DOPENEXR_VIEWERS_ENABLE:BOOL=OFF
         -DOPENEXR_BUILD_UTILS:BOOL=OFF
+        -DBUILD_SHARED_LIBS=0
+        -DBUILD_TESTING:BOOL=OFF
+        -DINSTALL_OPENEXR_DOCS:BOOL=OFF
+        -DINSTALL_OPENEXR_EXAMPLES:BOOL=OFF
+        -DZLIB_INCLUDE_DIR=/usr/local/opt/zlib/include
+        -DZLIB_LIBRARY=/usr/local/opt/zlib/library
+        -DZLIB_ROOT=/usr/local/opt/zlib/
 )
 
 set(DEP_OpenEXR_DEPENDS ZLIB)

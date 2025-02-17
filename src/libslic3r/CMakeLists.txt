@@ -501,7 +501,6 @@ if (APPLE)
             MacUtils.mm
         )
 endif ()
-
 add_library(libslic3r STATIC ${SLIC3R_SOURCES})
 
 if (WIN32)
@@ -558,7 +557,7 @@ if (MSVC AND "${CMAKE_SIZEOF_VOID_P}" STREQUAL "4") # 32 bit MSVC workaround
     target_compile_definitions(libslic3r_cgal PRIVATE CGAL_DO_NOT_USE_MPZF)
 endif ()
 
-encoding_check(libslic3r)
+#encoding_check(libslic3r)
 
 target_compile_definitions(libslic3r PUBLIC -DUSE_TBB -DTBB_USE_CAPTURED_EXCEPTION=0)
 target_include_directories(libslic3r PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/.. ${CMAKE_CURRENT_BINARY_DIR})
@@ -584,6 +583,8 @@ target_link_libraries(libslic3r PRIVATE
     qoi
     fastfloat
     int128
+    Boost::log
+    NLopt::nlopt
 )
 target_link_libraries(libslic3r PUBLIC
     Eigen3::Eigen
