@@ -402,45 +402,45 @@ set(SLIC3R_SOURCES
     Optimize/Optimizer.hpp
     Optimize/NLoptOptimizer.hpp
     Optimize/BruteforceOptimizer.hpp
-    ${OpenVDBUtils_SOURCES}
-    SLA/Pad.hpp
-    SLA/Pad.cpp
-    SLA/SupportTreeBuilder.hpp
-    SLA/SupportTreeMesher.hpp
-    SLA/SupportTreeMesher.cpp
-    SLA/SupportTreeUtils.hpp
-    SLA/SupportTreeUtilsLegacy.hpp
-    SLA/SupportTreeBuilder.cpp
-    SLA/SupportTree.hpp
-    SLA/SupportTree.cpp
-    SLA/SupportTreeStrategies.hpp
-#    SLA/SupportTreeIGL.cpp
-    SLA/Rotfinder.hpp
-    SLA/Rotfinder.cpp
-    SLA/SpatIndex.hpp
-    SLA/SpatIndex.cpp
-    SLA/RasterBase.hpp
-    SLA/RasterBase.cpp
-    SLA/AGGRaster.hpp
-    SLA/RasterToPolygons.hpp
-    SLA/RasterToPolygons.cpp
-    SLA/ConcaveHull.hpp
-    SLA/ConcaveHull.cpp
-    SLA/Hollowing.hpp
-    SLA/Hollowing.cpp
-    SLA/JobController.hpp
-    SLA/SupportPoint.hpp
-    SLA/SupportPointGenerator.hpp
-    SLA/SupportPointGenerator.cpp
-    SLA/Clustering.hpp
-    SLA/Clustering.cpp
-    SLA/ReprojectPointsOnMesh.hpp
-    SLA/DefaultSupportTree.hpp
-    SLA/DefaultSupportTree.cpp
-    SLA/BranchingTreeSLA.hpp
-    SLA/BranchingTreeSLA.cpp
-    SLA/ZCorrection.hpp
-    SLA/ZCorrection.cpp
+   #${OpenVDBUtils_SOURCES}
+   #SLA/Pad.hpp
+   #SLA/Pad.cpp
+   #SLA/SupportTreeBuilder.hpp
+   #SLA/SupportTreeMesher.hpp
+   #SLA/SupportTreeMesher.cpp
+   #SLA/SupportTreeUtils.hpp
+   #SLA/SupportTreeUtilsLegacy.hpp
+   #SLA/SupportTreeBuilder.cpp
+   #SLA/SupportTree.hpp
+   #SLA/SupportTree.cpp
+   #SLA/SupportTreeStrategies.hpp
+#  # SLA/SupportTreeIGL.cpp
+   #SLA/Rotfinder.hpp
+   #SLA/Rotfinder.cpp
+   #SLA/SpatIndex.hpp
+   #SLA/SpatIndex.cpp
+   #SLA/RasterBase.hpp
+   #SLA/RasterBase.cpp
+   #SLA/AGGRaster.hpp
+   #SLA/RasterToPolygons.hpp
+   #SLA/RasterToPolygons.cpp
+   #SLA/ConcaveHull.hpp
+   #SLA/ConcaveHull.cpp
+   #SLA/Hollowing.hpp
+   #SLA/Hollowing.cpp
+   #SLA/JobController.hpp
+   #SLA/SupportPoint.hpp
+   #SLA/SupportPointGenerator.hpp
+   #SLA/SupportPointGenerator.cpp
+   #SLA/Clustering.hpp
+   #SLA/Clustering.cpp
+   #SLA/ReprojectPointsOnMesh.hpp
+   #SLA/DefaultSupportTree.hpp
+   #SLA/DefaultSupportTree.cpp
+   #SLA/BranchingTreeSLA.hpp
+   #SLA/BranchingTreeSLA.cpp
+   #SLA/ZCorrection.hpp
+   #SLA/ZCorrection.cpp
     BranchingTree/BranchingTree.cpp
     BranchingTree/BranchingTree.hpp
     BranchingTree/PointCloud.cpp
@@ -605,9 +605,9 @@ if (APPLE)
     target_link_libraries(libslic3r PUBLIC OCCTWrapper)
 endif ()
 
-if (TARGET OpenVDB::openvdb)
-    target_link_libraries(libslic3r PUBLIC OpenVDB::openvdb)
-endif()
+#if (TARGET OpenVDB::openvdb)
+   # target_link_libraries(libslic3r PUBLIC OpenVDB::openvdb)
+#endif()
 
 if(WIN32)
     target_link_libraries(libslic3r PUBLIC Psapi.lib)

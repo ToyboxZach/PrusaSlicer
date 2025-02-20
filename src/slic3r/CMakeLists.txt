@@ -439,7 +439,7 @@ target_link_libraries(
     PUBLIC
     libslic3r
     slic3r-arrange-wrapper
-    avrdude
+   # avrdude
     libcereal
     imgui
     libvgcode

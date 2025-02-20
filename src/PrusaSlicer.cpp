@@ -48,10 +48,18 @@
 #include "libslic3r/GCode/PostProcessor.hpp"
 #include "libslic3r/Model.hpp"
 #include "libslic3r/CutUtils.hpp"
+#ifndef SMALL_WASM_BINARY
+
 #include <arrange-wrapper/ModelArrange.hpp>
+#endif
+
 #include "libslic3r/Platform.hpp"
 #include "libslic3r/Print.hpp"
+#ifndef SMALL_WASM_BINARY
+
 #include "libslic3r/SLAPrint.hpp"
+#endif
+
 #include "libslic3r/TriangleMesh.hpp"
 #include "libslic3r/Format/AMF.hpp"
 #include "libslic3r/Format/3mf.hpp"
@@ -361,13 +369,18 @@ int CLI::run(int argc, char **argv)
 
     // Initialize full print configs for both the FFF and SLA technologies.
     FullPrintConfig    fff_print_config;
+#ifndef SMALL_WASM_BINARY
+
     SLAFullPrintConfig sla_print_config;
-    
+#endif    
     // Synchronize the default parameters and the ones received on the command line.
     if (printer_technology == ptFFF) {
         fff_print_config.apply(m_print_config, true);
         m_print_config.apply(fff_print_config, true);
     } else {
+#ifdef SMALL_WASM_BINARY
+        assert(false)
+#else
         assert(printer_technology == ptSLA);
         sla_print_config.output_filename_format.value = "[input_filename_base].sl1";
         
@@ -379,6 +392,7 @@ int CLI::run(int argc, char **argv)
         
         sla_print_config.apply(m_print_config, true);
         m_print_config.apply(sla_print_config, true);
+#endif
     }
     
     {
@@ -393,12 +407,17 @@ int CLI::run(int argc, char **argv)
     bool user_center_specified = false;
 
     const Vec2crd gap{s_multiple_beds.get_bed_gap()};
+#ifndef SMALL_WASM_BINARY
+
     arr2::ArrangeBed bed = arr2::to_arrange_bed(get_bed_shape(m_print_config), gap);
     arr2::ArrangeSettings arrange_cfg;
     arrange_cfg.set_distance_from_objects(min_object_distance(m_print_config));
+#endif
 
     for (auto const &opt_key : m_transforms) {
         if (opt_key == "merge") {
+#ifndef SMALL_WASM_BINARY
+
             Model m;
             for (auto &model : m_models)
                 for (ModelObject *o : model.objects)
@@ -442,6 +461,8 @@ int CLI::run(int argc, char **argv)
             const double distance = fff_print_config.duplicate_distance.value;
             for (auto &model : m_models)
                 model.duplicate_objects_grid(x, y, (distance > 0) ? distance : 6);  // TODO: this is not the right place for setting a default
+#endif
+
         } else if (opt_key == "center") {
         	user_center_specified = true;
             for (auto &model : m_models) {
@@ -559,6 +580,7 @@ int CLI::run(int argc, char **argv)
         }
 #endif
         else if (opt_key == "split") {
+#ifndef SMALL_WASM_BINARY
             for (Model &model : m_models) {
                 size_t num_objects = model.objects.size();
                 for (size_t i = 0; i < num_objects; ++ i) {
@@ -567,6 +589,7 @@ int CLI::run(int argc, char **argv)
                     model.delete_object(size_t(0));
                 }
             }
+#endif
         } else if (opt_key == "repair") {
             // Models are repaired by default.
             //for (auto &model : m_models)
@@ -640,6 +663,8 @@ int CLI::run(int argc, char **argv)
                 // and all instances will be rearranged (unless --dont-arrange is supplied).
                 std::string outfile = m_config.opt_string("output");
                 Print       fff_print;
+                #ifndef SMALL_WASM_BINARY
+
                 SLAPrint    sla_print;
                 sla_print.set_status_callback(
                             [](const PrintBase::SlicingStatus& s)
@@ -651,6 +676,9 @@ int CLI::run(int argc, char **argv)
                 });
 
                 PrintBase  *print = (printer_technology == ptFFF) ? static_cast<PrintBase*>(&fff_print) : static_cast<PrintBase*>(&sla_print);
+#else
+                PrintBase *print = static_cast<PrintBase *>(&fff_print);
+#endif
                 if (! m_config.opt_bool("dont_arrange")) {
                     if (user_center_specified) {
                         Vec2d c = m_config.option<ConfigOptionPoint>("center")->value;
@@ -681,6 +709,7 @@ int CLI::run(int argc, char **argv)
 
 
                             std::function<ThumbnailsList(const ThumbnailsParams&)> thumbnail_generator_cli;
+#ifndef SMALL_WASM_BINARY
                             if (!fff_print.model().objects.empty() && boost::iends_with(fff_print.model().objects.front()->input_file, ".3mf")) {
                                 std::string filename = fff_print.model().objects.front()->input_file;
                                 thumbnail_generator_cli = [filename](const ThumbnailsParams&) {
@@ -729,7 +758,7 @@ int CLI::run(int argc, char **argv)
                                     return list_out;
                                 };  
                             }
-
+#endif
 
 
 
@@ -738,10 +767,12 @@ int CLI::run(int argc, char **argv)
                             outfile = fff_print.export_gcode(outfile, nullptr, thumbnail_generator_cli);
                             outfile_final = fff_print.print_statistics().finalize_output_path(outfile);
                         } else {
+#ifndef SMALL_WASM_BINARY
                             outfile = sla_print.output_filepath(outfile);
                             // We need to finalize the filename beforehand because the export function sets the filename inside the zip metadata
                             outfile_final = sla_print.print_statistics().finalize_output_path(outfile);
                             sla_print.export_print(outfile_final);
+#endif
                         }
                         if (outfile != outfile_final) {
                             if (Slic3r::rename_file(outfile, outfile_final)) {
@@ -857,7 +888,7 @@ bool CLI::setup(int argc, char **argv)
                 boost::nowide::cerr << "Invalid SLIC3R_LOGLEVEL environment variable: " << loglevel << std::endl;
         }
     }
-
+#ifndef SMALL_WASM_BINARY
     // Detect the operating system flavor after SLIC3R_LOGLEVEL is set.
     detect_platform();
 
@@ -908,6 +939,7 @@ bool CLI::setup(int argc, char **argv)
     set_local_dir((path_resources / "localization").string());
     set_sys_shapes_dir((path_resources / "shapes").string());
     set_custom_gcodes_dir((path_resources / "custom_gcodes").string());
+#endif
 
     // Parse all command line options into a DynamicConfig.
     // If any option is unsupported, print usage and abort immediately.

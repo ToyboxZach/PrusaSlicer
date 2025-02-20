@@ -6,7 +6,6 @@ if (BUILD_SHARED_LIBS)
     set(_qhull_static_libs "-DBUILD_STATIC_LIBS:BOOL=OFF")
     set(_qhull_shared_libs "-DBUILD_SHARED_LIBS:BOOL=ON")
 endif ()
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -pthread")
 
 add_cmake_project(Qhull
     URL "https://github.com/qhull/qhull/archive/refs/tags/v8.1-alpha3.zip"
