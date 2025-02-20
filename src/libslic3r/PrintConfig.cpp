@@ -43,6 +43,12 @@
 #include "libslic3r/enum_bitmask.hpp"
 #include "libslic3r/libslic3r.h"
 
+#ifdef WASM_SMALL_BUILD
+
+// If we are building for wasm, these extra strings don't matter
+// We can same close to a MB by ignoring them
+#define L(arg) ""
+#endif
 namespace Slic3r {
 
 static t_config_enum_names enum_names_from_keys_map(const t_config_enum_values &enum_keys_map)

@@ -348,9 +348,8 @@ endif()
 set(MINIMUM_BOOST_VERSION "1.87.0")
 find_package(Threads REQUIRED)
 
-
 set(_boost_components "system;filesystem;thread;locale;regex;chrono;atomic;date_time;iostreams;nowide;log")
-set(Eigen3_DIR "~/PrusaPlayground/PrusaSlicer/deps/build/destdir/usr/local/share/eigen3/cmake")
+set(Eigen3_DIR "${CMAKE_CURRENT_SOURCE_DIR}/deps/build/destdir/usr/local/share/eigen3/cmake")
 
 find_package(Eigen3 3.3.7 REQUIRED)
 set(Boost_USE_STATIC_LIBS ON)

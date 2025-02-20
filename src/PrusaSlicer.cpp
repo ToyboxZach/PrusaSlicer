@@ -379,7 +379,7 @@ int CLI::run(int argc, char **argv)
         m_print_config.apply(fff_print_config, true);
     } else {
 #ifdef SMALL_WASM_BINARY
-        assert(false)
+        assert(false);
 #else
         assert(printer_technology == ptSLA);
         sla_print_config.output_filename_format.value = "[input_filename_base].sl1";
@@ -674,11 +674,6 @@ int CLI::run(int argc, char **argv)
                         std::fflush(stdout);
                     }
                 });
-
-                PrintBase  *print = (printer_technology == ptFFF) ? static_cast<PrintBase*>(&fff_print) : static_cast<PrintBase*>(&sla_print);
-#else
-                PrintBase *print = static_cast<PrintBase *>(&fff_print);
-#endif
                 if (! m_config.opt_bool("dont_arrange")) {
                     if (user_center_specified) {
                         Vec2d c = m_config.option<ConfigOptionPoint>("center")->value;
@@ -686,6 +681,11 @@ int CLI::run(int argc, char **argv)
                     } else
                         arrange_objects(model, bed, arrange_cfg);
                 }
+                PrintBase  *print = (printer_technology == ptFFF) ? static_cast<PrintBase*>(&fff_print) : static_cast<PrintBase*>(&sla_print);
+#else
+                PrintBase *print = static_cast<PrintBase *>(&fff_print);
+#endif
+               
                 if (printer_technology == ptFFF) {
                     for (auto* mo : model.objects)
                         fff_print.auto_assign_extruders(mo);
