@@ -27,9 +27,8 @@ emcmake cmake .. -DCMAKE_PREFIX_PATH="$PWD/../deps/build/destdir/usr/local" -DSL
 
 There is also a problem that at least on my machine emsdk has a seperate sys root and would not look outside of it no matter what I did, but some parts of CMake use the global location. I could not personally figure out how to make them look in the same place to be able to compile I just copied all my deps into the emsdk location.
 I ran something like this:
-mkdir -p {Path to emsdk}/upstream/emscripten/cache/sysroot/{MY PATH TO PRUSA}/deps/build/destdir/usr/local/
-cp -r {PATH TO PRUSA}/deps/build/destdir/usr/local/\* {Path to emsdk}/upstream/emscripten/cache/sysroot/{{MY PATH TO PRUSA}}/deps/build/destdir/usr/local/
 
+You may have to symlink {Path to emsdk}/upstream/emscripten/cache/sysroot/{MY PATH TO PRUSA}/deps/build/destdir/usr/local/ with {PATH TO PRUSA}/deps/build/destdir/usr/local/
 Some of the deps might themselves needs to look at that location, so you may need to do this also if some of the deps compilation fails.
 
 Boost log had a problem being copied where it needed to be so I also directly copied that one.
@@ -55,7 +54,7 @@ mkdir build
 cd build
 
 ABSOLUTE_PATH="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-
+so you
 mkdir -p ${EMSDK_SYSROOT}/${ABSOLUTE_PATH}/deps/build/destdir/usr/local/
 cp -r ${ABSOLUTE_PATH}/deps/dep_GMP-prefix/src/GMP/\*.h ${ABSOLUTE_PATH}/deps/build/destdir/usr/local/include/
 
@@ -64,3 +63,8 @@ cp -r ${ABSOLUTE_PATH}/deps/build/destdir/usr/local ${EMSDK_SYSROOT}/${ABSOLUTE_
 emcmake cmake .. -DCMAKE_PREFIX_PATH="$PWD/../deps/build/destdir/usr/local" -DSLIC3R_DESKTOP_INTEGRATION=OFF -DSLIC3R_GUI=OFF
 emmake make
 ```
+
+I have added a new compiling flag SMALL_WASM_BINARY
+
+THis is to help reduce the size of the binary. The primary use is to remove support for the SLA printers which was ~9Mb
+It also attempts to remove a few other things, and lower the number of defined strings.

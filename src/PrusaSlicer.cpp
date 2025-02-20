@@ -781,6 +781,10 @@ int CLI::run(int argc, char **argv)
                             }
                             outfile = outfile_final;
                         }
+#if PRINT_STATISTICS_IN_CONSOLE
+                        fff_print.print_statistics().print();
+#endif
+
                         // Run the post-processing scripts if defined.
                         run_post_process_scripts(outfile, fff_print.full_print_config());
                         boost::nowide::cout << "Slicing result exported to " << outfile << std::endl;

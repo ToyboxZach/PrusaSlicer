@@ -577,7 +577,7 @@ target_link_libraries(libslic3r PRIVATE
     TBB::tbbmalloc
     libslic3r_cgal
     ${CMAKE_DL_LIBS}
-    PNG::PNG
+   # PNG::PNG
     ZLIB::ZLIB
 	JPEG::JPEG
     qoi

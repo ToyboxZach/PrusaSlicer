@@ -43,7 +43,7 @@
 #include "libslic3r/enum_bitmask.hpp"
 #include "libslic3r/libslic3r.h"
 
-#ifdef WASM_SMALL_BUILD
+#ifdef SMALL_WASM_BINARY
 
 // If we are building for wasm, these extra strings don't matter
 // We can same close to a MB by ignoring them
