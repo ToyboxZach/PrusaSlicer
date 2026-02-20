@@ -34,15 +34,15 @@ else()
 endif()
 
 option(SLIC3R_STATIC 			"Compile PrusaSlicer with static libraries (Boost, TBB, glew)" ${SLIC3R_STATIC_INITIAL})
-option(SLIC3R_GUI    			"Compile PrusaSlicer with GUI components (OpenGL, wxWidgets)" 1)
+option(SLIC3R_GUI    			"Compile PrusaSlicer with GUI components (OpenGL, wxWidgets)" 0)
 option(SLIC3R_FHS               "Assume PrusaSlicer is to be installed in a FHS directory structure" 0)
 option(SLIC3R_PCH               "Use precompiled headers" 1)
 option(SLIC3R_MSVC_COMPILE_PARALLEL "Compile on Visual Studio in parallel" 1)
 option(SLIC3R_ASAN              "Enable ASan on Clang and GCC" 0)
 option(SLIC3R_UBSAN             "Enable UBSan on Clang and GCC" 0)
-option(SLIC3R_ENABLE_FORMAT_STEP "Enable compilation of STEP file support" ON)
-option(SLIC3R_LOG_TO_FILE       "Enable logging into file")
-option(SLIC3R_REPO_URL          "Preset repo URL")
+option(SLIC3R_ENABLE_FORMAT_STEP "Enable compilation of STEP file support" OFF)
+option(SLIC3R_LOG_TO_FILE       "Enable logging into file" OFF)
+option(SLIC3R_REPO_URL          "Preset repo URL" OFF)
 
 # SLIC3R_OPENGL_ES can be enabled only if SLIC3R_GUI is enabled.
 CMAKE_DEPENDENT_OPTION(SLIC3R_OPENGL_ES "Compile PrusaSlicer targeting OpenGL ES" OFF "SLIC3R_GUI" OFF)
@@ -83,7 +83,7 @@ if (APPLE)
 endif ()
 
 option(SLIC3R_BUILD_SANDBOXES   "Build development sandboxes" OFF)
-option(SLIC3R_BUILD_TESTS       "Build unit tests" ON)
+option(SLIC3R_BUILD_TESTS       "Build unit tests" OFF)
 
 if (IS_CROSS_COMPILE)
     message("Detected cross compilation setup. Tests and encoding checks will be forcedly disabled!")
@@ -128,7 +128,8 @@ if (MSVC AND CMAKE_CXX_COMPILER_ID STREQUAL Clang)
 else ()
     set(IS_CLANG_CL FALSE)
 endif ()
-
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DPRINT_STATISTICS_IN_CONSOLE -DSMALL_WASM_BINARY=1 -DBOOST_LOG_NO_THREADS -pthread -Wno-missing-template-arg-list-after-template-kw -ferror-limit=0 -fwasm-exceptions -DSAFE_HEAP=1 ")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DPRINT_STATISTICS_IN_CONSOLE -DSMALL_WASM_BINARY=1 -DBOOST_LOG_NO_THREADS -pthread -Wno-missing-template-arg-list-after-template-kw -ferror-limit=0 -fwasm-exceptions ")
 if (MSVC)
     if (SLIC3R_MSVC_COMPILE_PARALLEL AND NOT IS_CLANG_CL)
            add_compile_options(/MP)
@@ -307,31 +308,11 @@ if (SLIC3R_ASAN)
     endif ()
 endif ()
 
-if (SLIC3R_UBSAN)
-    # Stacktrace for every report is enabled by default. It can be disabled by running PrusaSlicer with "UBSAN_OPTIONS=print_stacktrace=0".
+set(EMSCRIPT_LINKERFLAGS "-pthread -sMODULARIZE -sPTHREAD_POOL_SIZE=_emscripten_num_logical_cores() -sDEFAULT_LIBRARY_FUNCS_TO_INCLUDE=emscripten_num_logical_cores  -s ASSERTIONS=2 -sEXPORT_NAME=importPrusaEngine -s TOTAL_STACK=512Mb -sENVIRONMENT=worker -sMAXIMUM_MEMORY=1Gb  -s EXPORTED_RUNTIME_METHODS=[\"callMain\",\"FS\"] -s EXIT_RUNTIME=1 -s INVOKE_RUN=0 -s INITIAL_MEMORY=1Gb")
 
-    # Define macro SLIC3R_UBSAN to allow detection in the source code if this sanitizer is enabled.
-    add_compile_definitions(SLIC3R_UBSAN)
 
-    # Clang supports much more useful checks than GCC, so when Clang is detected, another checks will be enabled.
-    # List of what GCC is checking: https://gcc.gnu.org/onlinedocs/gcc/Instrumentation-Options.html
-    # List of what Clang is checking: https://clang.llvm.org/docs/UndefinedBehaviorSanitizer.html
-    if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-        set(_ubsan_flags "-fsanitize=undefined,integer")
-    else ()
-        set(_ubsan_flags "-fsanitize=undefined")
-    endif ()
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${EMSCRIPT_LINKERFLAGS}  ")
 
-    add_compile_options(${_ubsan_flags} -fno-omit-frame-pointer)
-
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${_ubsan_flags}")
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${_ubsan_flags}")
-    set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} ${_ubsan_flags}")
-
-    if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -lubsan")
-    endif ()
-endif ()
 
 if (APPLE)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror=partial-availability -Werror=unguarded-availability -Werror=unguarded-availability-new")
@@ -341,17 +322,11 @@ endif ()
 set(LIBDIR_BIN ${CMAKE_CURRENT_BINARY_DIR}/src)
 # For generated header files
 include_directories(${LIBDIR_BIN}/platform)
+include_directories(${PROJECT_SOURCE_DIR}/slic3r-arrange-wrapper/include)
+include_directories(${PROJECT_SOURCE_DIR}/slic3r-arrange/include)
 
-if(WIN32)
-    add_definitions(-D_USE_MATH_DEFINES -D_WIN32 -D_CRT_SECURE_NO_WARNINGS -D_SCL_SECURE_NO_WARNINGS)
-    if(MSVC)
-        # BOOST_ALL_NO_LIB: Avoid the automatic linking of Boost libraries on Windows. Rather rely on explicit linking.
-        add_definitions(-DBOOST_ALL_NO_LIB -DBOOST_USE_WINAPI_VERSION=0x601 -DBOOST_SYSTEM_USE_UTF8 )
-        # Force the source code encoding to UTF-8. See PrusaSlicer GH pull request #5583
-        add_compile_options("$<$<C_COMPILER_ID:MSVC>:/utf-8>")
-        add_compile_options("$<$<CXX_COMPILER_ID:MSVC>:/utf-8>")
-    endif(MSVC)
-endif(WIN32)
+include_directories(${PROJECT_SOURCE_DIR}/src/slic3r-arrange-wrapper/include)
+include_directories(${PROJECT_SOURCE_DIR}/src/slic3r-arrange/include)
 
 add_definitions(-DwxUSE_UNICODE -D_UNICODE -DUNICODE -DWXINTL_NO_GETTEXT_MACRO)
 
@@ -360,6 +335,7 @@ add_definitions(-DwxNO_UNSAFE_WXSTRING_CONV)
 
 # Find and configure boost
 if(SLIC3R_STATIC)
+
     # Use static boost libraries.
     set(Boost_USE_STATIC_LIBS ON)
     # Use boost libraries linked statically to the C++ runtime.
@@ -369,23 +345,32 @@ endif()
 # set(Boost_COMPILER "-mgw81")
 # boost::process was introduced first in version 1.64.0,
 # boost::beast::detail::base64 was introduced first in version 1.66.0
-set(MINIMUM_BOOST_VERSION "1.83.0")
-set(_boost_components "system;filesystem;thread;log;locale;regex;chrono;atomic;date_time;iostreams;nowide")
-find_package(Boost ${MINIMUM_BOOST_VERSION} REQUIRED COMPONENTS ${_boost_components})
+set(MINIMUM_BOOST_VERSION "1.87.0")
+find_package(Threads REQUIRED)
+
+set(_boost_components "system;filesystem;thread;locale;regex;chrono;atomic;date_time;iostreams;nowide;log")
+set(Eigen3_DIR "${CMAKE_CURRENT_SOURCE_DIR}/deps/build/destdir/usr/local/share/eigen3/cmake")
 
 find_package(Eigen3 3.3.7 REQUIRED)
-
+set(Boost_USE_STATIC_LIBS ON)
 add_library(boost_libs INTERFACE)
 add_library(boost_headeronly INTERFACE)
-
+set(Boost_ARCHITECTURE 64)
+find_package(Boost REQUIRED COMPONENTS filesystem thread log ${_boost_components})
+set(WASM_ATOMICS 1)
+set(WASM_BULK_MEMORY 1)
 if (APPLE)
     # BOOST_ASIO_DISABLE_KQUEUE : prevents a Boost ASIO bug on OS X: https://svn.boost.org/trac/boost/ticket/5339
     target_compile_definitions(boost_headeronly INTERFACE BOOST_ASIO_DISABLE_KQUEUE)
 endif()
 
-if(NOT SLIC3R_STATIC)
-    target_compile_definitions(boost_headeronly INTERFACE BOOST_LOG_DYN_LINK)
-endif()
+    #target_compile_definitions(boost_headeronly INTERFACE BOOST_LOG_DYN_LINK)
+message("Boost_INCLUDE_DIR=${Boost_INCLUDE_DIR}")
+
+set(BOOST_LOG_NO_THREADS true)
+SET(Boost_USE_STATIC_LIBS ON)
+find_package(boost_log REQUIRED)
+target_link_libraries(boost_libs INTERFACE Boost::log)
 
 function(slic3r_remap_configs targets from_Cfg to_Cfg)
     if(MSVC)
@@ -420,6 +405,8 @@ else()
     target_link_libraries(boost_libs INTERFACE boost_headeronly ${Boost_LIBRARIES})
 endif()
 
+include_directories(${Boost_INCLUDE_DIRS})
+
 
 
 # Find and configure intel-tbb
@@ -427,6 +414,7 @@ if(SLIC3R_STATIC)
     set(TBB_STATIC 1)
 endif()
 set(TBB_DEBUG 1)
+message("CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}")
 find_package(TBB REQUIRED)
 slic3r_remap_configs(TBB::tbb RelWithDebInfo Release)
 slic3r_remap_configs(TBB::tbbmalloc RelWithDebInfo Release)
@@ -439,7 +427,7 @@ slic3r_remap_configs(TBB::tbbmalloc RelWithDebInfo Release)
 # The Intel TBB library will use the std::exception_ptr feature of C++11.
 # add_definitions(-DTBB_USE_CAPTURED_EXCEPTION=0)
 
-find_package(CURL REQUIRED)
+#find_package(CURL REQUIRED)
 
 add_library(libcurl INTERFACE)
 target_link_libraries(libcurl INTERFACE CURL::libcurl)
@@ -469,7 +457,7 @@ else() # found by an older Find script
     target_link_libraries(libexpat INTERFACE ${EXPAT_LIBRARIES})
 endif ()
 
-find_package(PNG REQUIRED)
+#find_package(PNG REQUIRED)
 
 set(OpenGL_GL_PREFERENCE "LEGACY")
 find_package(OpenGL REQUIRED)
@@ -491,165 +479,34 @@ else()
     target_link_libraries(libcereal INTERFACE cereal::cereal)
 endif()
 
-# l10n
-set(L10N_DIR "${SLIC3R_RESOURCES_DIR}/localization")
-add_custom_target(gettext_make_pot
-    COMMAND xgettext --keyword=L --keyword=_L --keyword=_u8L --keyword=L_CONTEXT:1,2c --keyword=_L_PLURAL:1,2 --add-comments=TRN --from-code=UTF-8 --debug --boost
-        -f "${L10N_DIR}/list.txt"
-        -o "${L10N_DIR}/PrusaSlicer.pot"
-    COMMAND hintsToPot ${SLIC3R_RESOURCES_DIR} ${L10N_DIR}
-    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
-    COMMENT "Generate pot file from strings in the source tree"
-)
-
-add_custom_target(gettext_merge_community_po_with_pot
-    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
-    COMMENT "Merge community po with new generated pot file"
-)
-file(GLOB L10N_PO_FILES "${L10N_DIR}/*/PrusaSlicer*.po")
-# list of names of directories, which are licalized by PS internally
-list(APPEND PS_L10N_DIRS "cs" "de" "es" "fr" "it" "ja" "pl")
-foreach(po_file ${L10N_PO_FILES})
-    GET_FILENAME_COMPONENT(po_dir "${po_file}" DIRECTORY)
-    GET_FILENAME_COMPONENT(po_dir_name "${po_dir}" NAME)
-    list(FIND PS_L10N_DIRS ${po_dir_name} found_dir_id)
-    # found_dir_id==-1 means that po_dir_name wasn't found in PS_L10N_DIRS
-    if(found_dir_id LESS 0)
-        add_custom_command(
-            TARGET gettext_merge_community_po_with_pot PRE_BUILD
-            COMMAND msgmerge -N -o ${po_file} ${po_file} "${L10N_DIR}/PrusaSlicer.pot"
-            # delete obsolete lines from resulting PO to avoid conflicts after a merging of it with wxWidgets.po
-            COMMAND msgattrib --no-obsolete -o ${po_file} ${po_file}
-            DEPENDS ${po_file}
-        )
-    endif()
-endforeach()
-
-add_custom_target(gettext_concat_wx_po_with_po
-    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
-    COMMENT "Concatenate and merge wxWidgets localization po with PrusaSlicer po file"
-)
-file(GLOB L10N_PO_FILES "${L10N_DIR}/*/PrusaSlicer*.po")
-foreach(po_file ${L10N_PO_FILES})
-    GET_FILENAME_COMPONENT(po_dir "${po_file}" DIRECTORY)
-    GET_FILENAME_COMPONENT(po_dir_name "${po_dir}" NAME)
-    SET(wx_po_file "${L10N_DIR}/wx_locale/${po_dir_name}.po")
-    #SET(po_new_file "${po_dir}/PrusaSlicer_.po")
-    add_custom_command(
-        TARGET gettext_concat_wx_po_with_po PRE_BUILD
-        COMMAND msgcat --use-first -o ${po_file} ${po_file} ${wx_po_file}
-        # delete obsolete lines from resulting PO
-        COMMAND msgattrib --no-obsolete -o ${po_file} ${po_file}
-        DEPENDS ${po_file}
-    )
-endforeach()
-
-add_custom_target(gettext_po_to_mo
-    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
-    COMMENT "Generate localization mo files (binary) from po files (texts)"
-)
-file(GLOB L10N_PO_FILES "${L10N_DIR}/*/PrusaSlicer*.po")
-foreach(po_file ${L10N_PO_FILES})
-    GET_FILENAME_COMPONENT(po_dir "${po_file}" DIRECTORY)
-    SET(mo_file "${po_dir}/PrusaSlicer.mo")
-    add_custom_command(
-        TARGET gettext_po_to_mo PRE_BUILD
-        COMMAND msgfmt ARGS --check-format -o ${mo_file} ${po_file}
-        #COMMAND msgfmt ARGS --check-compatibility -o ${mo_file} ${po_file}
-        DEPENDS ${po_file}
-    )
-endforeach()
 
 find_package(NLopt 1.4 REQUIRED)
 slic3r_remap_configs(NLopt::nlopt RelWithDebInfo Release)
 
 if(SLIC3R_STATIC)
-    set(OPENVDB_USE_STATIC_LIBS ON)
+    #set(OPENVDB_USE_STATIC_LIBS ON)
     set(USE_BLOSC TRUE)
 endif ()
 
-find_package(OpenVDB 5.0 COMPONENTS openvdb)
-if(OpenVDB_FOUND)
-    slic3r_remap_configs(IlmBase::Half RelWithDebInfo Release)
-    slic3r_remap_configs(Blosc::blosc RelWithDebInfo Release)
-else ()
-    message(FATAL_ERROR "OpenVDB could not be found with the bundled find module. "
-                   "You can try to specify the find module location of your "
-                   "OpenVDB installation with the OPENVDB_FIND_MODULE_PATH cache variable.")
-endif ()
+#find_package(OpenVDB 5.0 COMPONENTS openvdb)
+#if(OpenVDB_FOUND)
+#    slic3r_remap_configs(IlmBase::Half RelWithDebInfo Release)
+#    slic3r_remap_configs(Blosc::blosc RelWithDebInfo Release)
+#else ()
+#    message(FATAL_ERROR "OpenVDB could not be found with the bundled find module. "
+#                   "You can try to specify the find module location of your "
+#                   "OpenVDB installation with the OPENVDB_FIND_MODULE_PATH cache variable.")
+#endif ()
 
-set(TOP_LEVEL_PROJECT_DIR ${PROJECT_SOURCE_DIR})
-function(prusaslicer_copy_dlls target)
-    if ("${CMAKE_SIZEOF_VOID_P}" STREQUAL "8")
-        set(_bits 64)
-    elseif ("${CMAKE_SIZEOF_VOID_P}" STREQUAL "4")
-        set(_bits 32)
-    endif ()
-    
-    get_property(_is_multi GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
-    get_target_property(_alt_out_dir ${target} RUNTIME_OUTPUT_DIRECTORY)
 
-    if (_alt_out_dir)
-        set (_out_dir "${_alt_out_dir}")
-    elseif (_is_multi)
-        set (_out_dir "$<TARGET_PROPERTY:${target},BINARY_DIR>/$<CONFIG>")
-    else ()
-        set (_out_dir "$<TARGET_PROPERTY:${target},BINARY_DIR>")
-    endif ()
-    
-    # This has to be a separate target due to the windows command line lenght limits    
-    add_custom_command(TARGET ${target} POST_BUILD 
-        COMMAND ${CMAKE_COMMAND} -E copy ${TOP_LEVEL_PROJECT_DIR}/deps/+GMP/gmp/lib/win${_bits}/libgmp-10.dll ${_out_dir}
-        COMMENT "Copy gmp runtime to build tree"
-        VERBATIM)
-    
-    add_custom_command(TARGET ${target} POST_BUILD 
-        COMMAND ${CMAKE_COMMAND} -E copy ${TOP_LEVEL_PROJECT_DIR}/deps/+MPFR/mpfr/lib/win${_bits}/libmpfr-4.dll ${_out_dir}
-        COMMENT "Copy mpfr runtime to build tree"
-        VERBATIM)
-endfunction()
 
+message("ADDING SUB DIR Boost_INCLUDE_DIRS=${Boost_INCLUDE_DIRS}")
+include_directories(${Boost_INCLUDE_DIRS})
+include_directories("${CMAKE_PREFIX_PATH}/include")
 add_subdirectory(build-utils)
 add_subdirectory(bundled_deps)
 # libslic3r, PrusaSlicer GUI and the PrusaSlicer executable.
 add_subdirectory(src)
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT PrusaSlicer_app_console)
 
-add_dependencies(gettext_make_pot hintsToPot)
 
-if(SLIC3R_BUILD_SANDBOXES)
-    add_subdirectory(sandboxes)
-endif()
-
-if(SLIC3R_BUILD_TESTS)
-    add_subdirectory(tests)
-endif()
-
-
-# Resources install target, configure fhs.hpp on UNIX
-if (WIN32)
-    install(DIRECTORY "${SLIC3R_RESOURCES_DIR}/" DESTINATION "${CMAKE_INSTALL_PREFIX}/resources")
-elseif (SLIC3R_FHS)
-    # CMAKE_INSTALL_FULL_DATAROOTDIR: read-only architecture-independent data root (share)
-    set(SLIC3R_FHS_RESOURCES "${CMAKE_INSTALL_FULL_DATAROOTDIR}/PrusaSlicer")
-    install(DIRECTORY ${SLIC3R_RESOURCES_DIR}/ DESTINATION ${SLIC3R_FHS_RESOURCES}
-        PATTERN "*/udev" EXCLUDE
-    )
-    install(FILES src/platform/unix/PrusaSlicer.desktop DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/applications)
-    install(FILES src/platform/unix/PrusaGcodeviewer.desktop DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/applications)
-    foreach(SIZE 32 128 192)
-        install(FILES ${SLIC3R_RESOURCES_DIR}/icons/PrusaSlicer_${SIZE}px.png
-            DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/icons/hicolor/${SIZE}x${SIZE}/apps RENAME PrusaSlicer.png
-        )
-        install(FILES ${SLIC3R_RESOURCES_DIR}/icons/PrusaSlicer-gcodeviewer_${SIZE}px.png
-            DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/icons/hicolor/${SIZE}x${SIZE}/apps RENAME PrusaSlicer-gcodeviewer.png
-        )
-    endforeach()
-    install(DIRECTORY ${SLIC3R_RESOURCES_DIR}/udev/ DESTINATION lib/udev/rules.d)
-else ()
-    install(FILES src/platform/unix/PrusaSlicer.desktop DESTINATION ${CMAKE_INSTALL_PREFIX}/resources/applications)
-    install(FILES src/platform/unix/PrusaGcodeviewer.desktop DESTINATION ${CMAKE_INSTALL_PREFIX}/resources/applications)
-    install(DIRECTORY "${SLIC3R_RESOURCES_DIR}/" DESTINATION "${CMAKE_INSTALL_PREFIX}/resources")
-endif ()
-
-configure_file(src/platform/unix/fhs.hpp.in ${LIBDIR_BIN}/platform/unix/fhs.hpp)

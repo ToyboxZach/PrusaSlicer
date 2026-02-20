@@ -123,6 +123,9 @@ if (APPLE)
     )
 endif ()
 
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -pthread -fwasm-exceptions")
+set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -pthread -fwasm-exceptions")
+
 list_projects(FOUND_PACKAGES ${CMAKE_CURRENT_LIST_DIR})
 
 dep_message(STATUS "Found external package definitions: ${FOUND_PACKAGES}")

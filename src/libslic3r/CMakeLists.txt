@@ -402,45 +402,45 @@ set(SLIC3R_SOURCES
     Optimize/Optimizer.hpp
     Optimize/NLoptOptimizer.hpp
     Optimize/BruteforceOptimizer.hpp
-    ${OpenVDBUtils_SOURCES}
-    SLA/Pad.hpp
-    SLA/Pad.cpp
-    SLA/SupportTreeBuilder.hpp
-    SLA/SupportTreeMesher.hpp
-    SLA/SupportTreeMesher.cpp
-    SLA/SupportTreeUtils.hpp
-    SLA/SupportTreeUtilsLegacy.hpp
-    SLA/SupportTreeBuilder.cpp
-    SLA/SupportTree.hpp
-    SLA/SupportTree.cpp
-    SLA/SupportTreeStrategies.hpp
-#    SLA/SupportTreeIGL.cpp
-    SLA/Rotfinder.hpp
-    SLA/Rotfinder.cpp
-    SLA/SpatIndex.hpp
-    SLA/SpatIndex.cpp
-    SLA/RasterBase.hpp
-    SLA/RasterBase.cpp
-    SLA/AGGRaster.hpp
-    SLA/RasterToPolygons.hpp
-    SLA/RasterToPolygons.cpp
-    SLA/ConcaveHull.hpp
-    SLA/ConcaveHull.cpp
-    SLA/Hollowing.hpp
-    SLA/Hollowing.cpp
-    SLA/JobController.hpp
-    SLA/SupportPoint.hpp
-    SLA/SupportPointGenerator.hpp
-    SLA/SupportPointGenerator.cpp
-    SLA/Clustering.hpp
-    SLA/Clustering.cpp
-    SLA/ReprojectPointsOnMesh.hpp
-    SLA/DefaultSupportTree.hpp
-    SLA/DefaultSupportTree.cpp
-    SLA/BranchingTreeSLA.hpp
-    SLA/BranchingTreeSLA.cpp
-    SLA/ZCorrection.hpp
-    SLA/ZCorrection.cpp
+   #${OpenVDBUtils_SOURCES}
+   #SLA/Pad.hpp
+   #SLA/Pad.cpp
+   #SLA/SupportTreeBuilder.hpp
+   #SLA/SupportTreeMesher.hpp
+   #SLA/SupportTreeMesher.cpp
+   #SLA/SupportTreeUtils.hpp
+   #SLA/SupportTreeUtilsLegacy.hpp
+   #SLA/SupportTreeBuilder.cpp
+   #SLA/SupportTree.hpp
+   #SLA/SupportTree.cpp
+   #SLA/SupportTreeStrategies.hpp
+#  # SLA/SupportTreeIGL.cpp
+   #SLA/Rotfinder.hpp
+   #SLA/Rotfinder.cpp
+   #SLA/SpatIndex.hpp
+   #SLA/SpatIndex.cpp
+   #SLA/RasterBase.hpp
+   #SLA/RasterBase.cpp
+   #SLA/AGGRaster.hpp
+   #SLA/RasterToPolygons.hpp
+   #SLA/RasterToPolygons.cpp
+   #SLA/ConcaveHull.hpp
+   #SLA/ConcaveHull.cpp
+   #SLA/Hollowing.hpp
+   #SLA/Hollowing.cpp
+   #SLA/JobController.hpp
+   #SLA/SupportPoint.hpp
+   #SLA/SupportPointGenerator.hpp
+   #SLA/SupportPointGenerator.cpp
+   #SLA/Clustering.hpp
+   #SLA/Clustering.cpp
+   #SLA/ReprojectPointsOnMesh.hpp
+   #SLA/DefaultSupportTree.hpp
+   #SLA/DefaultSupportTree.cpp
+   #SLA/BranchingTreeSLA.hpp
+   #SLA/BranchingTreeSLA.cpp
+   #SLA/ZCorrection.hpp
+   #SLA/ZCorrection.cpp
     BranchingTree/BranchingTree.cpp
     BranchingTree/BranchingTree.hpp
     BranchingTree/PointCloud.cpp
@@ -501,7 +501,6 @@ if (APPLE)
             MacUtils.mm
         )
 endif ()
-
 add_library(libslic3r STATIC ${SLIC3R_SOURCES})
 
 if (WIN32)
@@ -558,7 +557,7 @@ if (MSVC AND "${CMAKE_SIZEOF_VOID_P}" STREQUAL "4") # 32 bit MSVC workaround
     target_compile_definitions(libslic3r_cgal PRIVATE CGAL_DO_NOT_USE_MPZF)
 endif ()
 
-encoding_check(libslic3r)
+#encoding_check(libslic3r)
 
 target_compile_definitions(libslic3r PUBLIC -DUSE_TBB -DTBB_USE_CAPTURED_EXCEPTION=0)
 target_include_directories(libslic3r PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/.. ${CMAKE_CURRENT_BINARY_DIR})
@@ -578,12 +577,14 @@ target_link_libraries(libslic3r PRIVATE
     TBB::tbbmalloc
     libslic3r_cgal
     ${CMAKE_DL_LIBS}
-    PNG::PNG
+   # PNG::PNG
     ZLIB::ZLIB
 	JPEG::JPEG
     qoi
     fastfloat
     int128
+    Boost::log
+    NLopt::nlopt
 )
 target_link_libraries(libslic3r PUBLIC
     Eigen3::Eigen
@@ -604,9 +605,9 @@ if (APPLE)
     target_link_libraries(libslic3r PUBLIC OCCTWrapper)
 endif ()
 
-if (TARGET OpenVDB::openvdb)
-    target_link_libraries(libslic3r PUBLIC OpenVDB::openvdb)
-endif()
+#if (TARGET OpenVDB::openvdb)
+   # target_link_libraries(libslic3r PUBLIC OpenVDB::openvdb)
+#endif()
 
 if(WIN32)
     target_link_libraries(libslic3r PUBLIC Psapi.lib)

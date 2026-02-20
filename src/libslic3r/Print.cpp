@@ -1750,6 +1750,16 @@ DynamicConfig PrintStatistics::placeholders()
     return config;
 }
 
+#ifdef PRINT_STATISTICS_IN_CONSOLE
+void PrintStatistics::print() const{
+    const auto statisticValues = config();
+    for (const std::string &opt_key : statisticValues.keys())
+    {
+        std::cout << opt_key << "=" << statisticValues.opt_serialize(opt_key) << std::endl;
+    }
+}
+#endif
+
 std::string PrintStatistics::finalize_output_path(const std::string &path_in) const
 {
     std::string final_path;

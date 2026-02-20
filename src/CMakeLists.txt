@@ -4,24 +4,23 @@ project(PrusaSlicer-native)
 add_subdirectory(clipper)
 find_package(Qhull 7.2 REQUIRED)
 add_library(qhull INTERFACE)
-if(SLIC3R_STATIC)
+#if(SLIC3R_STATIC)
     slic3r_remap_configs("Qhull::qhullcpp;Qhull::qhullstatic_r" RelWithDebInfo Release)
     target_link_libraries(qhull INTERFACE Qhull::qhullcpp Qhull::qhullstatic_r)
-else()
-    slic3r_remap_configs("Qhull::qhullcpp;Qhull::qhull_r" RelWithDebInfo Release)
-    target_link_libraries(qhull INTERFACE Qhull::qhullcpp Qhull::qhull_r)
-endif()
+#else()
+ #   slic3r_remap_configs("Qhull::qhullcpp;Qhull::qhull_r" RelWithDebInfo Release)
+ #   target_link_libraries(qhull INTERFACE Qhull::qhullcpp Qhull::qhull_r)
+#endif()
 
 add_subdirectory(libslic3r)
 
 if (SLIC3R_ENABLE_FORMAT_STEP)
     add_subdirectory(occt_wrapper)
 endif ()
-
+add_subdirectory(slic3r-arrange)
+add_subdirectory(slic3r-arrange-wrapper)
 if (SLIC3R_GUI)
     add_subdirectory(libvgcode)
-    add_subdirectory(slic3r-arrange)
-    add_subdirectory(slic3r-arrange-wrapper)
 
     if(WIN32)
         message(STATUS "WXWIN environment set to: $ENV{WXWIN}")
@@ -232,14 +231,11 @@ else ()
         # On OSX, the name of the binary matches the name of the Application.
         add_custom_command(TARGET PrusaSlicer POST_BUILD
             COMMAND ln -sf PrusaSlicer prusa-slicer
-            COMMAND ln -sf PrusaSlicer prusa-gcodeviewer
-            COMMAND ln -sf PrusaSlicer PrusaGCodeViewer
             WORKING_DIRECTORY "$<TARGET_FILE_DIR:PrusaSlicer>"
             COMMENT "Symlinking the G-code viewer to PrusaSlicer, symlinking to prusa-slicer and prusa-gcodeviewer"
             VERBATIM)
     else ()
         add_custom_command(TARGET PrusaSlicer POST_BUILD
-            COMMAND ln -sf prusa-slicer prusa-gcodeviewer
             WORKING_DIRECTORY "$<TARGET_FILE_DIR:PrusaSlicer>"
             COMMENT "Symlinking the G-code viewer to PrusaSlicer"
             VERBATIM)
@@ -250,10 +246,10 @@ else ()
     else ()
         set(BIN_RESOURCES_DIR "${CMAKE_CURRENT_BINARY_DIR}/../resources")
     endif ()
-    add_custom_command(TARGET PrusaSlicer POST_BUILD
-        COMMAND ln -sfn "${SLIC3R_RESOURCES_DIR}" "${BIN_RESOURCES_DIR}"
-        COMMENT "Symlinking the resources directory into the build tree"
-        VERBATIM)
+   # add_custom_command(TARGET PrusaSlicer POST_BUILD
+     #   COMMAND ln -sfn "${SLIC3R_RESOURCES_DIR}" "${BIN_RESOURCES_DIR}"
+      #  COMMENT "Symlinking the resources directory into the build tree"
+    #    VERBATIM)
 endif ()
 
 # Slic3r binary install target

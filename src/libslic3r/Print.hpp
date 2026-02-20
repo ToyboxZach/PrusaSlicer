@@ -545,6 +545,10 @@ struct PrintStatistics
     // Replace the print statistics placeholders in the path.
     std::string             finalize_output_path(const std::string &path_in) const;
 
+#ifdef PRINT_STATISTICS_IN_CONSOLE
+    void print() const;
+#endif
+
     void clear() {
         total_used_filament    = 0.;
         total_extruded_volume  = 0.;

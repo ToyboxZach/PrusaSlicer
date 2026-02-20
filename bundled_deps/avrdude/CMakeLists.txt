@@ -92,8 +92,8 @@ target_link_libraries(avrdude PRIVATE localesutils)
 add_executable(avrdude-slic3r avrdude/main-standalone.cpp)
 target_link_libraries(avrdude-slic3r avrdude)
 
-encoding_check(avrdude)
-encoding_check(avrdude-slic3r)
+#encoding_check(avrdude)
+#encoding_check(avrdude-slic3r)
 
 # Make avrdude-slic3r.conf.h includable:
 target_include_directories(avrdude SYSTEM PRIVATE ${CMAKE_CURRENT_BINARY_DIR})

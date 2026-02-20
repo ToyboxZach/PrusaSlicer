@@ -1,5 +1,6 @@
+
 add_subdirectory(admesh)
-add_subdirectory(avrdude)
+#add_subdirectory(avrdude)
 add_subdirectory(miniz)
 add_subdirectory(glu-libtess)
 add_subdirectory(agg)
@@ -12,14 +13,14 @@ add_library(semver STATIC
     semver/semver.h
 )
 target_include_directories(semver PUBLIC semver)
-encoding_check(semver)
+#encoding_check(semver)
 
 add_library(qoi STATIC
     qoi/qoilib.c
     qoi/qoi.h
 )
 target_include_directories(qoi PUBLIC qoi)
-encoding_check(qoi)
+#encoding_check(qoi)
 
 add_library(fastfloat INTERFACE)
 target_include_directories(fastfloat INTERFACE fast_float)
@@ -43,7 +44,3 @@ target_include_directories(stb_dxt INTERFACE stb_dxt)
 add_library(tcbspan INTERFACE)
 target_include_directories(tcbspan INTERFACE tcbspan)
 
-if (SLIC3R_GUI)
-    add_subdirectory(imgui)
-    add_subdirectory(hidapi)
-endif ()
